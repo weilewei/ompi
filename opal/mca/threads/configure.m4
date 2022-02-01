@@ -43,7 +43,7 @@ AC_DEFUN([MCA_opal_threads_CONFIG],[
 
 AC_ARG_WITH([threads],
             [AS_HELP_STRING([--with-threads=TYPE],
-                        [Specify thread TYPE to use. default:pthreads. Other options are qthreads and argobots.])])
+                        [Specify thread TYPE to use. default:pthreads. Other options are qthreads, argobots, hpxthreads.])])
 
 #
 # Configure components
