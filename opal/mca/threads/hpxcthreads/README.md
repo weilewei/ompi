@@ -41,3 +41,11 @@ make install
 
 # 5. Build HPXC against the HPX from step 4
 # 6. Build OpenMPI against the HPXC from step 5
+
+# TODO:
+## 1. Finish the `OPAL_THREAD_INTERNAL_COND_INITIALIZER` implementation in 
+```
+ompi/opal/mca/threads/hpxcthreads/threads_hpxcthreads_mutex.h
+```
+
+## 2. Add magic number as an additional struct member in `hpxc_cond_t`
