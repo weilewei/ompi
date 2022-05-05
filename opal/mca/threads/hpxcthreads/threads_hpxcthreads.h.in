@@ -26,10 +26,13 @@
 #ifndef OPAL_MCA_THREADS_HPXCTHREADS_THREADS_HPXCTHREADS_H
 #define OPAL_MCA_THREADS_HPXCTHREADS_THREADS_HPXCTHREADS_H 1
 
-// #include "/home/weile/install/hpxc/include/hpxc/threads.h"
+#include <stdio.h>
+#include "/home/weile/install/hpxc/include/hpxc/threads.h"
+//#include "@OPAL_HPXCTHREADS_INCLUDE_PATH@hpxcthread/tls.h
 
 static inline void opal_threads_ensure_init_hpxcthreads(void)
 {
+    printf("opal_threads_ensure_init_hpxcthreads\n");
     // hpxc_init();
 }
 

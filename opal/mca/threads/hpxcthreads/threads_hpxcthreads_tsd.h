@@ -27,25 +27,28 @@
 #define OPAL_MCA_THREADS_HPXCTHREADS_THREADS_HPXCTHREADS_TSD_H 1
 
 #include "opal/mca/threads/hpxcthreads/threads_hpxcthreads.h"
+#include <stdio.h>
 
-// typedef hpxcthread_key_t opal_tsd_key_t;
-typedef void *opal_tsd_key_t;
+typedef hpxc_key_t opal_tsd_key_t;
 
 static inline int opal_tsd_key_delete(opal_tsd_key_t key)
 {
-    // return 0 == qthread_key_delete(key) ? OPAL_SUCCESS : OPAL_ERROR;
-    return 0;
+    printf("opal_tsd_key_delete\n");
+    int ret = hpxc_key_delete(key);
+    return 0 == ret ? OPAL_SUCCESS : OPAL_ERR_IN_ERRNO;
 }
 
 static inline int opal_tsd_set(opal_tsd_key_t key, void *value)
 {
-    // return 0 == qthread_setspecific(key, value) ? OPAL_SUCCESS : OPAL_ERROR;
-    return 0;
+    printf("opal_tsd_set\n");
+    int ret = hpxc_setspecific(key, value);
+    return 0 == ret ? OPAL_SUCCESS : OPAL_ERR_IN_ERRNO;
 }
 
 static inline int opal_tsd_get(opal_tsd_key_t key, void **valuep)
 {
-    // *valuep = qthread_getspecific(key);
+    printf("opal_tsd_get\n");
+    *valuep = hpxc_getspecific(key);
     return OPAL_SUCCESS;
 }
 

@@ -42,65 +42,60 @@
 
 BEGIN_C_DECLS
 
-typedef opal_atomic_lock_t opal_thread_internal_mutex_t;
+typedef hpxc_mutex_t opal_thread_internal_mutex_t;
 
-#define OPAL_THREAD_INTERNAL_MUTEX_INITIALIZER           OPAL_ATOMIC_LOCK_INIT
-#define OPAL_THREAD_INTERNAL_RECURSIVE_MUTEX_INITIALIZER OPAL_ATOMIC_LOCK_INIT
+#define OPAL_THREAD_INTERNAL_MUTEX_INITIALIZER           {NULL, 0x4321}
+#define OPAL_THREAD_INTERNAL_RECURSIVE_MUTEX_INITIALIZER {NULL, 0x4321}
 
 static inline int opal_thread_internal_mutex_init(opal_thread_internal_mutex_t *p_mutex,
                                                   bool recursive)
 {
-    opal_atomic_lock_init(p_mutex, 0);
+//    printf("opal_thread_internal_mutex_init: %p, recursive: %d\n", p_mutex, recursive);
+    hpxc_mutex_init(p_mutex, NULL);
     return OPAL_SUCCESS;
 }
 
 static inline void opal_thread_internal_mutex_lock(opal_thread_internal_mutex_t *p_mutex)
 {
-    // opal_threads_ensure_init_qthreads();
+//    printf("opal_thread_internal_mutex_lock: %p\n", p_mutex);
+    if(p_mutex->handle==NULL && p_mutex->magic==0x4321)
+        hpxc_mutex_init(p_mutex, NULL);
 
-    int ret = opal_atomic_trylock(p_mutex);
-    while (0 != ret) {
-        // qthread_yield();
-        ret = opal_atomic_trylock(p_mutex);
+#if OPAL_ENABLE_DEBUG
+    int ret = hpxc_mutex_lock(p_mutex);
+    if (EDEADLK == ret) {
+        opal_output(0, "opal_thread_internal_mutex_lock() %d", ret);
     }
+    // assert(0 == ret);
+#else
+    hpxc_mutex_lock(p_mutex);
+#endif
 }
 
 static inline int opal_thread_internal_mutex_trylock(opal_thread_internal_mutex_t *p_mutex)
 {
-    // opal_threads_ensure_init_qthreads();
+//    printf("opal_thread_internal_mutex_trylock\n");
+    if(p_mutex->handle==NULL && p_mutex->magic==0x4321)
+        hpxc_mutex_init(p_mutex, NULL);
 
-    int ret = opal_atomic_trylock(p_mutex);
-    if (0 != ret) {
-        /* Yield to avoid a deadlock. */
-        // qthread_yield();
-    }
-    return ret;
+    int ret = hpxc_mutex_trylock(p_mutex);
+    return 0 == ret ? 0 : 1;
 }
 
 static inline void opal_thread_internal_mutex_unlock(opal_thread_internal_mutex_t *p_mutex)
 {
-    // opal_threads_ensure_init_qthreads();
+//    printf("opal_thread_internal_mutex_unlock: %p\n", p_mutex);
 
-    opal_atomic_unlock(p_mutex);
-    /* For fairness of locking. */
-    // qthread_yield();
+    hpxc_mutex_unlock(p_mutex);
 }
 
 static inline void opal_thread_internal_mutex_destroy(opal_thread_internal_mutex_t *p_mutex)
 {
-    /* No specific operation is needed to destroy opal_thread_internal_mutex_t. */
+//    printf("opal_thread_internal_mutex_destroy\n");
+    hpxc_mutex_destroy(p_mutex);
 }
 
-typedef struct opal_thread_cond_waiter_t {
-    int m_signaled;
-    struct opal_thread_cond_waiter_t *m_prev;
-} opal_thread_cond_waiter_t;
-
-typedef struct {
-    opal_atomic_lock_t m_lock;
-    opal_thread_cond_waiter_t *m_waiter_head;
-    opal_thread_cond_waiter_t *m_waiter_tail;
-} opal_thread_internal_cond_t;
+typedef hpxc_cond_t opal_thread_internal_cond_t;
 
 #define OPAL_THREAD_INTERNAL_COND_INITIALIZER                                          \
     {                                                                                  \
@@ -109,75 +104,34 @@ typedef struct {
 
 static inline int opal_thread_internal_cond_init(opal_thread_internal_cond_t *p_cond)
 {
-    opal_atomic_lock_init(&p_cond->m_lock, 0);
-    p_cond->m_waiter_head = NULL;
-    p_cond->m_waiter_tail = NULL;
+//    printf("opal_thread_internal_cond_init\n");
+    hpxc_cond_init(p_cond, 0);
     return OPAL_SUCCESS;
 }
 
 static inline void opal_thread_internal_cond_wait(opal_thread_internal_cond_t *p_cond,
                                                   opal_thread_internal_mutex_t *p_mutex)
 {
-    // opal_threads_ensure_init_qthreads();
-    /* This thread is taking "lock", so only this thread can access this
-     * condition variable.  */
-    opal_atomic_lock(&p_cond->m_lock);
-    opal_thread_cond_waiter_t waiter = {0, NULL};
-    if (NULL == p_cond->m_waiter_head) {
-        p_cond->m_waiter_tail = &waiter;
-    } else {
-        p_cond->m_waiter_head->m_prev = &waiter;
-    }
-    p_cond->m_waiter_head = &waiter;
-    opal_atomic_unlock(&p_cond->m_lock);
-
-    while (1) {
-        opal_thread_internal_mutex_unlock(p_mutex);
-        // qthread_yield();
-        opal_thread_internal_mutex_lock(p_mutex);
-        /* Check if someone woke me up. */
-        opal_atomic_lock(&p_cond->m_lock);
-        int signaled = waiter.m_signaled;
-        opal_atomic_unlock(&p_cond->m_lock);
-        if (1 == signaled) {
-            break;
-        }
-        /* Unlock the lock again. */
-    }
+//    printf("opal_thread_internal_cond_wait\n");
+    hpxc_cond_wait(p_cond, p_mutex);
 }
 
 static inline void opal_thread_internal_cond_broadcast(opal_thread_internal_cond_t *p_cond)
 {
-    opal_atomic_lock(&p_cond->m_lock);
-    while (NULL != p_cond->m_waiter_tail) {
-        opal_thread_cond_waiter_t *p_cur_tail = p_cond->m_waiter_tail;
-        p_cond->m_waiter_tail = p_cur_tail->m_prev;
-        /* Awaken one of threads in a FIFO manner. */
-        p_cur_tail->m_signaled = 1;
-    }
-    /* No waiters. */
-    p_cond->m_waiter_head = NULL;
-    opal_atomic_unlock(&p_cond->m_lock);
+//    printf("opal_thread_internal_cond_broadcast\n");
+    hpxc_cond_broadcast(p_cond);
 }
 
 static inline void opal_thread_internal_cond_signal(opal_thread_internal_cond_t *p_cond)
 {
-    opal_atomic_lock(&p_cond->m_lock);
-    if (NULL != p_cond->m_waiter_tail) {
-        opal_thread_cond_waiter_t *p_cur_tail = p_cond->m_waiter_tail;
-        p_cond->m_waiter_tail = p_cur_tail->m_prev;
-        /* Awaken one of threads. */
-        p_cur_tail->m_signaled = 1;
-        if (NULL == p_cond->m_waiter_tail) {
-            p_cond->m_waiter_head = NULL;
-        }
-    }
-    opal_atomic_unlock(&p_cond->m_lock);
+//    printf("opal_thread_internal_cond_signal\n");
+    hpxc_cond_signal(p_cond);
 }
 
 static inline void opal_thread_internal_cond_destroy(opal_thread_internal_cond_t *p_cond)
 {
-    /* No destructor is needed. */
+//    printf("opal_thread_internal_cond_destroy\n");
+    hpxc_cond_destroy(p_cond);
 }
 
 END_C_DECLS

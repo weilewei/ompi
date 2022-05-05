@@ -57,7 +57,7 @@ AC_DEFUN([OPAL_CONFIG_HPXCTHREADS],[
                               [hpxc/threads.h],
                               [hpxcd],
                               [hpxc_thread_create],
-                              [-lhpx -lhpx_core],
+                              [],
                               [$opal_hpxcthreads_dir],
                               [$opal_hpxcthreads_libdir],
                               [],

@@ -21,6 +21,8 @@
  * $HEADER$
  */
 
+#include <stdio.h>
+
 #include "opal_config.h"
 
 #include "opal/constants.h"
@@ -51,5 +53,6 @@ const opal_threads_base_component_1_0_0_t mca_threads_hpxcthreads_component = {
 
 int opal_threads_hpxcthreads_open(void)
 {
+    printf("opal_threads_hpxcthreads_open\n");
     return OPAL_SUCCESS;
 }

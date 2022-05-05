@@ -24,6 +24,8 @@
 #include "opal/mca/threads/threads.h"
 #include "opal/mca/threads/tsd.h"
 
+#include <stdio.h>
+
 struct opal_tsd_key_value {
     opal_tsd_key_t key;
     opal_tsd_destructor_t destructor;
@@ -36,13 +38,14 @@ static opal_tsd_key_t opal_thread_self_key;
 
 static inline void self_key_ensure_init(void)
 {
+    printf("self_key_ensure_init\n");
     if (false == opal_thread_self_key_init) {
         /* not initialized yet. */
         opal_atomic_lock(&opal_thread_self_key_lock);
         /* check again. */
         if (false == opal_thread_self_key_init) {
             /* This thread is responsible for initializing this key. */
-            // qthread_key_create(&opal_thread_self_key, NULL);
+            hpxc_key_create(&opal_thread_self_key, NULL);
             opal_atomic_mb();
             opal_thread_self_key_init = true;
         }
@@ -53,7 +56,8 @@ static inline void self_key_ensure_init(void)
 
 int opal_tsd_key_create(opal_tsd_key_t *key, opal_tsd_destructor_t destructor)
 {
+    printf("opal_tsd_key_create\n");
     // opal_threads_ensure_init_qthreads();
-    // qthread_key_create(key, destructor);
+    hpxc_key_create(key, destructor);
     return OPAL_SUCCESS;
 }

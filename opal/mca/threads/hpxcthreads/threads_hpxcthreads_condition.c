@@ -23,12 +23,14 @@
  * $HEADER$
  */
 
+#include <stdio.h>
 #include "opal_config.h"
 
 #include "opal/mca/threads/condition.h"
 
 static void opal_condition_construct(opal_condition_t *c)
 {
+    printf("opal_condition_construct\n");
     c->c_waiting = 0;
     c->c_signaled = 0;
 }

@@ -27,12 +27,14 @@
 #define OPAL_MCA_THREADS_HPXCTHREADS_THREADS_HPXCTHREADS_THREADS_H 1
 
 #include "opal/mca/threads/qthreads/threads_qthreads.h"
+#include <stdio.h>
 
 /* Qthreads are cooperatively scheduled so yield when idle */
 #define OPAL_THREAD_YIELD_WHEN_IDLE_DEFAULT true
 
 static inline void opal_thread_yield(void)
 {
+    printf("opal_thread_yield\n");
     // qthread_yield();
 }
 
